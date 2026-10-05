@@ -140,17 +140,23 @@ export default function EventDetailsScreen({ navigation, route }) {
         <View style={styles.rule} />
         <Text style={styles.sectionTitle}>About this event</Text>
         <Text style={styles.description}>{event.description}</Text>
-        <View style={styles.tags}>
-          {event.tags.map((tag) => (
-            <Chip
-              buttonStyle={styles.tag}
-              key={tag}
-              title={tag}
-              titleStyle={styles.tagText}
-              type="outline"
-            />
-          ))}
-        </View>
+        {/* [Modified] QA-04: The "Graduate Student Mixer" event (evt-006) has no tags, so
+            event.tags is undefined. Calling .map() on undefined threw an error and showed the
+            red error screen. The tag row now renders only when the event actually has a list
+            of tags, so events without tags open normally. */}
+        {Array.isArray(event.tags) && event.tags.length > 0 ? (
+          <View style={styles.tags}>
+            {event.tags.map((tag) => (
+              <Chip
+                buttonStyle={styles.tag}
+                key={tag}
+                title={tag}
+                titleStyle={styles.tagText}
+                type="outline"
+              />
+            ))}
+          </View>
+        ) : null}
 
         <Pressable
           onPress={() => navigation.navigate('Notes', { eventId: event.id, eventTitle: event.title })}
