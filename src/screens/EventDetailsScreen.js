@@ -20,21 +20,39 @@ export default function EventDetailsScreen({ navigation, route }) {
   // copy that could go stale, so this heart always matches the hearts on Discover and Saved.
   const saved = event ? savedEventIds.includes(event.id) : false;
 
+  // [Modified] QA-03: Loads the event by its unique id. The old code accepted a list position
+  // (eventIndex) and read events[eventIndex], which pointed at the wrong event after a search
+  // or category filter. Now the event is read from SQLite by id, using the in-memory event list
+  // (matched by id) as a fallback. The `cancelled` flag stops a slow, outdated load from
+  // replacing the event that was opened more recently.
   useEffect(() => {
+    let cancelled = false;
     async function loadEvent() {
-      const selected = route.params?.eventIndex !== undefined
-        ? events[route.params.eventIndex]
-        : await getEvent(route.params?.eventId);
+      setLoading(true);
+      const eventId = route.params?.eventId;
+      let selected = null;
+      try {
+        selected = (await getEvent(eventId)) ?? events.find((item) => item.id === eventId) ?? null;
+      } catch {
+        selected = events.find((item) => item.id === eventId) ?? null;
+      }
+      if (cancelled) return;
       setEvent(selected);
       if (selected) {
         // [Modified] QA-02: Removed setSaved(...). The saved state is now derived
         // from context above.
-        setRegistered(await isRegistered(selected.id));
+        // [Modified] QA-03: Skips the update if a newer event load has started.
+        const alreadyRegistered = await isRegistered(selected.id);
+        if (cancelled) return;
+        setRegistered(alreadyRegistered);
       }
       setLoading(false);
     }
     loadEvent();
-  }, [route.params?.eventId, route.params?.eventIndex]);
+    return () => {
+      cancelled = true;
+    };
+  }, [route.params?.eventId]);
 
   // [Modified] QA-02: Delegates to the shared context toggle, which updates the
   // heart immediately and ignores repeated taps while the save is in progress.

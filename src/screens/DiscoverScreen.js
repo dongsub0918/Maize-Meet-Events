@@ -26,9 +26,14 @@ export default function DiscoverScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState('');
 
+  // [Modified] QA-03: Sorts a copy of the events ([...events]) by start time instead of
+  // calling events.sort() directly. sort() reorders an array in place, so the old code
+  // silently reordered the shared event list in AppContext that other screens rely on.
   const filteredEvents = useMemo(() => {
-    events.sort((left, right) => new Date(left.startsAt) - new Date(right.startsAt));
-    return events.filter((event) => {
+    const sortedEvents = [...events].sort(
+      (left, right) => new Date(left.startsAt) - new Date(right.startsAt)
+    );
+    return sortedEvents.filter((event) => {
       const matchesSearch = !query || event.title.includes(query);
       const matchesCategory =
         selectedCategory === 'All' || event.category === selectedCategory;
@@ -99,7 +104,10 @@ export default function DiscoverScreen({ navigation }) {
         contentContainerStyle={filteredEvents.length ? styles.list : styles.emptyList}
         data={filteredEvents}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
-        keyExtractor={(_, index) => String(index)}
+        // [Modified] QA-03: Each row is keyed by its unique event id instead of its position.
+        // With position keys, React reused the wrong card when a search or category filter
+        // changed which events were in the list.
+        keyExtractor={(item) => item.id}
         ListEmptyComponent={
           <EmptyState
             actionLabel="Clear filters"
@@ -109,15 +117,19 @@ export default function DiscoverScreen({ navigation }) {
           />
         }
         refreshControl={<RefreshControl onRefresh={handleRefresh} refreshing={refreshing} />}
-        renderItem={({ item, index }) => (
+        renderItem={({ item }) => (
           <EventCard
             event={item}
             // [Modified] QA-02: Passes the live saved state from context so the heart
             // always matches the database.
             saved={savedEventIds.includes(item.id)}
+            // [Modified] QA-03: Opens the details screen with the event's unique id. Before, it
+            // sent the row's position in the filtered list (eventIndex), and the details
+            // screen looked up that position in the full, unfiltered list. After a search or
+            // category filter, those positions don't line up, so a different event opened.
             onPress={() =>
               navigation.navigate('EventDetails', {
-                eventIndex: index,
+                eventId: item.id,
                 source: 'Discover',
               })
             }
