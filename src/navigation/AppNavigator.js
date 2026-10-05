@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -22,7 +22,9 @@ const icons = {
 
 function MainTabs() {
   const { savedEventIds } = useAppContext();
-  const [savedCount] = useState(savedEventIds.length);
+  // [Modified] QA-02: The Saved tab badge count is calculated from the live list on
+  // every render. It used to be frozen with useState, so it never changed after launch.
+  const savedCount = savedEventIds.length;
 
   return (
     <Tabs.Navigator

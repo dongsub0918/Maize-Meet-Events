@@ -1,17 +1,20 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Card, Text } from '@rneui/themed';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { formatEventDate, formatEventTime } from '../utils/date';
 import { colors } from '../theme/theme';
 
-export default function EventCard({ event, initiallySaved, onPress, onToggleSaved }) {
-  const [saved, setSaved] = useState(initiallySaved);
-
-  async function handleSavedPress() {
-    setSaved((current) => !current);
-    const next = await onToggleSaved(event.id);
-    setSaved(next);
+// [Modified] QA-02: The card used to copy `initiallySaved` into its own local state.
+// That copy went stale when the event was saved or unsaved somewhere else (the details screen,
+// another tab), so the heart could show the wrong value. The card now takes a `saved` prop and
+// renders it directly. The value comes from AppContext's savedEventIds, so every heart for an
+// event shows the same thing.
+export default function EventCard({ event, saved, onPress, onToggleSaved }) {
+  // [Modified] QA-02: Asks the context to toggle this event. The context updates
+  // the heart immediately and ignores extra taps while the save is in progress.
+  function handleSavedPress() {
+    onToggleSaved(event.id);
   }
 
   return (
@@ -19,7 +22,16 @@ export default function EventCard({ event, initiallySaved, onPress, onToggleSave
       <Card containerStyle={styles.card}>
         <View style={styles.topRow}>
           <Text style={styles.category}>{event.category.toUpperCase()}</Text>
-          <Pressable hitSlop={4} onPress={handleSavedPress} style={styles.heartButton}>
+          {/* [Modified] QA-02: Larger hitSlop so taps near the heart register, plus
+              accessibility state so screen readers announce whether the event is saved. */}
+          <Pressable
+            accessibilityLabel={saved ? 'Remove from saved events' : 'Save event'}
+            accessibilityRole="button"
+            accessibilityState={{ selected: saved }}
+            hitSlop={10}
+            onPress={handleSavedPress}
+            style={styles.heartButton}
+          >
             <MaterialCommunityIcons
               color={saved ? '#C6253D' : colors.muted}
               name={saved ? 'heart' : 'heart-outline'}

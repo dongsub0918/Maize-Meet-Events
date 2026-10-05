@@ -112,7 +112,9 @@ export default function DiscoverScreen({ navigation }) {
         renderItem={({ item, index }) => (
           <EventCard
             event={item}
-            initiallySaved={savedEventIds.includes(item.id)}
+            // [Modified] QA-02: Passes the live saved state from context so the heart
+            // always matches the database.
+            saved={savedEventIds.includes(item.id)}
             onPress={() =>
               navigation.navigate('EventDetails', {
                 eventIndex: index,

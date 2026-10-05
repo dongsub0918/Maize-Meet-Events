@@ -14,15 +14,33 @@ export default function SavedScreen({ navigation }) {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // [Modified] QA-02: Reloads the saved list whenever savedEventIds changes. Before,
+  // it loaded only once when the tab first opened, so later saves and unsaves never showed up
+  // and the list contained outdated entries.
   useEffect(() => {
+    let cancelled = false;
     getSavedEvents()
-      .then(setEvents)
-      .finally(() => setLoading(false));
-  }, []);
+      .then((rows) => {
+        if (!cancelled) setEvents(rows);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [savedEventIds]);
 
-  const displayedEvents = events.sort(
-    (left, right) => new Date(left.startsAt) - new Date(right.startsAt)
-  );
+  // [Modified] QA-02: Builds the displayed list. It keeps only events that are still
+  // saved, lists each event once (by id), and sorts a copy by start time (the old code sorted
+  // state in place).
+  const displayedEvents = Array.from(
+    new Map(
+      events
+        .filter((event) => savedEventIds.includes(event.id))
+        .map((event) => [event.id, event])
+    ).values()
+  ).sort((left, right) => new Date(left.startsAt) - new Date(right.startsAt));
 
   if (loading) {
     return <LoadingOverlay label="Loading saved events..." />;
@@ -38,7 +56,9 @@ export default function SavedScreen({ navigation }) {
         contentContainerStyle={displayedEvents.length ? styles.list : styles.emptyList}
         data={displayedEvents}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
-        keyExtractor={(item, index) => `${item.id}-${index}`}
+        // [Modified] QA-02: Keyed by event id. Each event now appears once, so the
+        // id is a stable, unique key.
+        keyExtractor={(item) => item.id}
         ListEmptyComponent={
           <EmptyState
             message="Tap the heart on an event to keep it here."
@@ -48,7 +68,8 @@ export default function SavedScreen({ navigation }) {
         renderItem={({ item }) => (
           <EventCard
             event={item}
-            initiallySaved={savedEventIds.includes(item.id)}
+            // [Modified] QA-02: The heart reads the live saved state from context.
+            saved={savedEventIds.includes(item.id)}
             onPress={() => navigation.navigate('EventDetails', { eventId: item.id })}
             onToggleSaved={toggleSaved}
           />

@@ -16,7 +16,9 @@ export default function EventDetailsScreen({ navigation, route }) {
   const [loading, setLoading] = useState(true);
   const [registered, setRegistered] = useState(false);
   const [registering, setRegistering] = useState(false);
-  const [saved, setSaved] = useState(false);
+  // [Modified] QA-02: The saved state comes straight from context instead of a local
+  // copy that could go stale, so this heart always matches the hearts on Discover and Saved.
+  const saved = event ? savedEventIds.includes(event.id) : false;
 
   useEffect(() => {
     async function loadEvent() {
@@ -25,7 +27,8 @@ export default function EventDetailsScreen({ navigation, route }) {
         : await getEvent(route.params?.eventId);
       setEvent(selected);
       if (selected) {
-        setSaved(savedEventIds.includes(selected.id));
+        // [Modified] QA-02: Removed setSaved(...). The saved state is now derived
+        // from context above.
         setRegistered(await isRegistered(selected.id));
       }
       setLoading(false);
@@ -33,9 +36,10 @@ export default function EventDetailsScreen({ navigation, route }) {
     loadEvent();
   }, [route.params?.eventId, route.params?.eventIndex]);
 
-  async function handleSave() {
-    const next = await toggleSaved(event.id);
-    setSaved(next);
+  // [Modified] QA-02: Delegates to the shared context toggle, which updates the
+  // heart immediately and ignores repeated taps while the save is in progress.
+  function handleSave() {
+    toggleSaved(event.id);
   }
 
   async function handleRegister() {
@@ -76,7 +80,15 @@ export default function EventDetailsScreen({ navigation, route }) {
         >
           <MaterialCommunityIcons color={colors.blue} name="arrow-left" size={25} />
         </Pressable>
-        <Pressable onPress={handleSave} style={styles.navButton}>
+        {/* [Modified] QA-02: Heart button with a larger touch area and an accessible state. */}
+        <Pressable
+          accessibilityLabel={saved ? 'Remove from saved events' : 'Save event'}
+          accessibilityRole="button"
+          accessibilityState={{ selected: saved }}
+          hitSlop={8}
+          onPress={handleSave}
+          style={styles.navButton}
+        >
           <MaterialCommunityIcons
             color={saved ? '#C6253D' : colors.blue}
             name={saved ? 'heart' : 'heart-outline'}

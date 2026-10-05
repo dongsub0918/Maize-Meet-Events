@@ -43,6 +43,15 @@ export async function initializeDatabase() {
       rowId INTEGER PRIMARY KEY AUTOINCREMENT,
       eventId TEXT NOT NULL
     );
+
+    -- [Modified] QA-02: Repeated heart taps could store the same event in
+    -- saved_events more than once. This deletes those duplicate saved rows, keeping one row
+    -- per event.
+    DELETE FROM saved_events
+      WHERE rowId NOT IN (SELECT MIN(rowId) FROM saved_events GROUP BY eventId);
+
+    -- [Modified] QA-02: A UNIQUE index so each event can be saved at most once.
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_saved_events_eventId ON saved_events (eventId);
     CREATE TABLE IF NOT EXISTS notes (
       eventId TEXT PRIMARY KEY,
       body TEXT NOT NULL,
@@ -101,10 +110,13 @@ export async function getEvent(eventId) {
 export async function getSavedEvents() {
   try {
     const db = await getDatabase();
+    // [Modified] QA-02: Returns the saved events. The old INNER JOIN returned an
+    // event once for every matching row in saved_events, so duplicate saved rows showed up as
+    // repeated entries on the Saved screen. The IN subquery returns each event row once.
     const rows = await db.getAllAsync(`
       SELECT events.*
       FROM events
-      INNER JOIN saved_events ON saved_events.eventId = events.id
+      WHERE events.id IN (SELECT eventId FROM saved_events)
     `);
     return rows.map(mapEvent);
   } catch {
@@ -115,7 +127,8 @@ export async function getSavedEvents() {
 export async function getSavedEventIds() {
   try {
     const db = await getDatabase();
-    const rows = await db.getAllAsync('SELECT eventId FROM saved_events');
+    // [Modified] QA-02: DISTINCT so each saved event id is returned only once.
+    const rows = await db.getAllAsync('SELECT DISTINCT eventId FROM saved_events');
     return rows.map((row) => row.eventId);
   } catch {
     return [];
@@ -134,7 +147,9 @@ export async function toggleSavedEvent(eventId) {
     return false;
   }
 
-  await db.runAsync('INSERT INTO saved_events (eventId) VALUES (?)', eventId);
+  // [Modified] QA-02: INSERT OR IGNORE plus the unique index means an overlapping
+  // second save of the same event cannot create a duplicate saved row.
+  await db.runAsync('INSERT OR IGNORE INTO saved_events (eventId) VALUES (?)', eventId);
   return true;
 }
 
