@@ -19,6 +19,13 @@ import { colors } from '../theme/theme';
 
 const categories = ['All', 'Academic', 'Arts', 'Career', 'Community', 'Workshop'];
 
+// [Modified] QA-06: Normalizes text for search. Trims leading and trailing spaces, collapses
+// repeated spaces into one, and lowercases everything, so "  ai   ETHICS " matches
+// "AI Ethics Panel".
+function normalizeSearchText(text) {
+  return (text || '').trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
 export default function DiscoverScreen({ navigation }) {
   const { events, setEvents, savedEventIds, toggleSaved } = useAppContext();
   const [query, setQuery] = useState('');
@@ -33,13 +40,22 @@ export default function DiscoverScreen({ navigation }) {
     const sortedEvents = [...events].sort(
       (left, right) => new Date(left.startsAt) - new Date(right.startsAt)
     );
+    // [Modified] QA-06: Search compares normalized text (see normalizeSearchText above), so
+    // capitalization and extra spaces no longer stop an event from matching. A query that is
+    // only spaces counts as empty and shows every event.
+    const normalizedQuery = normalizeSearchText(query);
     return sortedEvents.filter((event) => {
-      const matchesSearch = !query || event.title.includes(query);
+      const matchesSearch =
+        !normalizedQuery || normalizeSearchText(event.title).includes(normalizedQuery);
       const matchesCategory =
         selectedCategory === 'All' || event.category === selectedCategory;
       return matchesSearch && matchesCategory;
     });
-  }, [events, query]);
+    // [Modified] QA-06: Added selectedCategory to this dependency list. Without it, React kept
+    // reusing the old filtered list when a category chip was tapped: the chip highlighted, but
+    // the events didn't change until the search text changed. That made the category buttons
+    // look like they were missing taps.
+  }, [events, query, selectedCategory]);
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -83,9 +99,12 @@ export default function DiscoverScreen({ navigation }) {
         {categories.map((category) => {
           const selected = category === selectedCategory;
           return (
+            // [Modified] QA-06: hitSlop enlarges each chip's touch area by 6 points on every side,
+            // so taps just outside a chip's edge still select it.
             <Pressable
               accessibilityRole="button"
               accessibilityState={{ selected }}
+              hitSlop={6}
               key={category}
               onPress={() => setSelectedCategory(category)}
               style={[styles.chip, selected && styles.selectedChip]}
