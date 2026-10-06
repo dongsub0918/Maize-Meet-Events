@@ -39,6 +39,16 @@ export async function initializeDatabase() {
       registeredCount INTEGER NOT NULL,
       tags TEXT
     );
+
+    -- [Modified] QA-01: Earlier launches stored a new copy of every seed event each time the
+    -- app opened. This deletes those duplicates, keeping only the first (oldest) row for each
+    -- event id.
+    DELETE FROM events
+      WHERE rowId NOT IN (SELECT MIN(rowId) FROM events GROUP BY id);
+
+    -- [Modified] QA-01: A UNIQUE index on events.id, so the database itself refuses to store
+    -- the same event twice.
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_events_id ON events (id);
     CREATE TABLE IF NOT EXISTS saved_events (
       rowId INTEGER PRIMARY KEY AUTOINCREMENT,
       eventId TEXT NOT NULL
@@ -64,9 +74,14 @@ export async function initializeDatabase() {
     );
   `);
 
+  // [Modified] QA-01: This seeding loop runs on every app launch. It used a plain INSERT, so
+  // each launch added another full copy of every event, and Discover showed each event
+  // multiple times. With INSERT OR IGNORE and the unique index above, a seed event is only
+  // inserted when that id is not already stored. Existing rows are left unchanged, so data
+  // such as an updated registeredCount is kept across launches.
   for (const event of seedEvents) {
     await db.runAsync(
-      `INSERT INTO events
+      `INSERT OR IGNORE INTO events
         (id, title, description, startsAt, endsAt, category, location, room, capacity, registeredCount, tags)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       event.id,
