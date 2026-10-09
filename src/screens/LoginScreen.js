@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View } from 'react-native';
+import { KeyboardAvoidingView, ScrollView, View } from 'react-native';
 import { Button, Input, Text } from '@rneui/themed';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -32,7 +32,11 @@ export default function LoginScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.accent} />
-      <View style={styles.content}>
+      <KeyboardAvoidingView behavior="padding" style={styles.flex}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.mark}>
           <MaterialCommunityIcons color={colors.onMaize} name="calendar-star" size={34} />
         </View>
@@ -62,7 +66,8 @@ export default function LoginScreen({ navigation }) {
           <Button loading={loading} onPress={handleLogin} title="Sign in" />
           <Text style={styles.demo}>Demo account credentials are filled in for you.</Text>
         </View>
-      </View>
+      </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -70,7 +75,8 @@ export default function LoginScreen({ navigation }) {
 const useStyles = createThemedStyles((colors) => ({
   safeArea: { backgroundColor: colors.cream, flex: 1 },
   accent: { backgroundColor: colors.maize, height: 8, left: 0, position: 'absolute', right: 0, top: 0 },
-  content: { flex: 1, justifyContent: 'center', paddingHorizontal: 28 },
+  flex: { flex: 1 },
+  content: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 28, paddingVertical: 24 },
   mark: { alignItems: 'center', backgroundColor: colors.maize, borderRadius: 18, height: 64, justifyContent: 'center', width: 64 },
   title: { color: colors.blue, fontSize: 38, fontWeight: '900', letterSpacing: -1, marginTop: 16 },
   tagline: { color: colors.muted, fontSize: 17, marginTop: 3 },
