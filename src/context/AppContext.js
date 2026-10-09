@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { getEvents, getSavedEventIds, toggleSavedEvent } from '../db/database';
-import { getPreferences } from '../storage/preferences';
+import { getDatabase, getEvents, getSavedEventIds, toggleSavedEvent } from '../db/database';
+import { getPreferences, resetPreferences } from '../storage/preferences';
 
 const AppContext = createContext(null);
 
@@ -26,6 +26,17 @@ export function AppContextProvider({ children, initialSession }) {
     return isSaved;
   }
 
+  // Clears saved events, notes, settings, and the session, both in storage
+  // and in memory. Registrations are intentionally left untouched.
+  async function resetAppData() {
+    const db = await getDatabase();
+    await db.execAsync('DELETE FROM saved_events; DELETE FROM notes;');
+    await resetPreferences();
+    setSavedEventIds([]);
+    setPreferences({ darkTheme: false });
+    setSession(null);
+  }
+
   const value = {
     session,
     setSession,
@@ -33,6 +44,7 @@ export function AppContextProvider({ children, initialSession }) {
     setEvents,
     savedEventIds,
     toggleSaved,
+    resetAppData,
     preferences,
     setPreferences,
   };

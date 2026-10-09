@@ -5,7 +5,7 @@ import { Button, ListItem, Switch, Text } from '@rneui/themed';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppContext } from '../context/AppContext';
 import { clearSession } from '../services/session';
-import { resetPreferences, setDarkTheme } from '../storage/preferences';
+import { setDarkTheme } from '../storage/preferences';
 import { createThemedStyles, useAppColors } from '../theme/theme';
 
 function SettingRow({ icon, title, description, value, onChange }) {
@@ -26,7 +26,7 @@ function SettingRow({ icon, title, description, value, onChange }) {
 }
 
 export default function SettingsScreen({ navigation }) {
-  const { preferences, setPreferences, session, setSession } = useAppContext();
+  const { preferences, setPreferences, session, setSession, resetAppData } = useAppContext();
   const [message, setMessage] = useState('');
   const styles = useStyles();
 
@@ -45,9 +45,14 @@ export default function SettingsScreen({ navigation }) {
           text: 'Reset',
           style: 'destructive',
           onPress: async () => {
-            await resetPreferences();
-            setPreferences({ darkTheme: false });
-            setMessage('App data reset.');
+            try {
+              await resetAppData();
+            } catch {
+              setMessage('Could not reset app data.');
+              return;
+            }
+            // Clear the screen history so no screen keeps the old data.
+            navigation.getParent().reset({ index: 0, routes: [{ name: 'Login' }] });
           },
         },
       ]
