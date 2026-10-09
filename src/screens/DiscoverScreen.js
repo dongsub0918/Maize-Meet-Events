@@ -40,13 +40,13 @@ export default function DiscoverScreen({ navigation }) {
   async function handleRefresh() {
     setRefreshing(true);
     setRefreshError('');
-    setEvents([]);
     try {
       const nextEvents = await refreshEvents();
       setEvents(nextEvents);
-      setRefreshing(false);
     } catch (error) {
       setRefreshError(error.message);
+    } finally {
+      setRefreshing(false);
     }
   }
 
