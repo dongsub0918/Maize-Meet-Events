@@ -146,8 +146,11 @@ export async function getNote(eventId) {
 export async function saveNote(eventId, body) {
   const db = await getDatabase();
   const updatedAt = new Date().toISOString();
-  await db.execAsync(
-    `INSERT OR REPLACE INTO notes (eventId, body, updatedAt) VALUES ('${eventId}', '${body}', '${updatedAt}')`
+  await db.runAsync(
+    'INSERT OR REPLACE INTO notes (eventId, body, updatedAt) VALUES (?, ?, ?)',
+    eventId,
+    body,
+    updatedAt
   );
   return updatedAt;
 }

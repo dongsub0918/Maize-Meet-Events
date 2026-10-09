@@ -20,14 +20,27 @@ export default function NotesScreen({ navigation, route }) {
       .finally(() => setLoaded(true));
   }, [eventId]);
 
+  const pendingNote = useRef(null);
+
   useEffect(() => {
     if (!loaded) return;
+    pendingNote.current = note;
     timer.current = setTimeout(() => {
+      pendingNote.current = null;
       saveNote(eventId, note)
         .catch(() => {});
     }, 700);
     return () => clearTimeout(timer.current);
   }, [note]);
+
+  // Save any typing that is still waiting when the user leaves the screen.
+  useEffect(() => {
+    return () => {
+      if (pendingNote.current !== null) {
+        saveNote(eventId, pendingNote.current).catch(() => {});
+      }
+    };
+  }, [eventId]);
 
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
