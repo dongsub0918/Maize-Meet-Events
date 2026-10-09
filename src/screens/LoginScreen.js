@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, ScrollView, View } from 'react-native';
 import { Button, Input, Text } from '@rneui/themed';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppContext } from '../context/AppContext';
 import { createSession } from '../services/session';
-import { colors } from '../theme/theme';
+import { createThemedStyles, useAppColors } from '../theme/theme';
 
 export default function LoginScreen({ navigation }) {
   const { setSession } = useAppContext();
@@ -13,6 +13,8 @@ export default function LoginScreen({ navigation }) {
   const [password, setPassword] = useState('maize');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const colors = useAppColors();
+  const styles = useStyles();
 
   async function handleLogin() {
     if (!username.trim() || !password) {
@@ -30,9 +32,13 @@ export default function LoginScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.accent} />
-      <View style={styles.content}>
+      <KeyboardAvoidingView behavior="padding" style={styles.flex}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.mark}>
-          <MaterialCommunityIcons color={colors.blue} name="calendar-star" size={34} />
+          <MaterialCommunityIcons color={colors.onMaize} name="calendar-star" size={34} />
         </View>
         <Text h1 h1Style={styles.title}>MaizeMeet</Text>
         <Text style={styles.tagline}>There’s more happening here.</Text>
@@ -60,21 +66,23 @@ export default function LoginScreen({ navigation }) {
           <Button loading={loading} onPress={handleLogin} title="Sign in" />
           <Text style={styles.demo}>Demo account credentials are filled in for you.</Text>
         </View>
-      </View>
+      </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((colors) => ({
   safeArea: { backgroundColor: colors.cream, flex: 1 },
   accent: { backgroundColor: colors.maize, height: 8, left: 0, position: 'absolute', right: 0, top: 0 },
-  content: { flex: 1, justifyContent: 'center', paddingHorizontal: 28 },
+  flex: { flex: 1 },
+  content: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 28, paddingVertical: 24 },
   mark: { alignItems: 'center', backgroundColor: colors.maize, borderRadius: 18, height: 64, justifyContent: 'center', width: 64 },
   title: { color: colors.blue, fontSize: 38, fontWeight: '900', letterSpacing: -1, marginTop: 16 },
   tagline: { color: colors.muted, fontSize: 17, marginTop: 3 },
-  form: { backgroundColor: '#FFFFFF', borderRadius: 18, marginTop: 32, padding: 20 },
+  form: { backgroundColor: colors.surface, borderRadius: 18, marginTop: 32, padding: 20 },
   inputContainer: { paddingHorizontal: 0 },
   input: { borderBottomColor: colors.border },
   error: { color: colors.danger, marginBottom: 12 },
   demo: { color: colors.muted, fontSize: 12, marginTop: 15, textAlign: 'center' },
-});
+}));

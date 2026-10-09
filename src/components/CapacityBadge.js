@@ -1,8 +1,10 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import { Text } from '@rneui/themed';
+import { createThemedStyles } from '../theme/theme';
 
 export default function CapacityBadge({ capacity, registeredCount = 0 }) {
+  const styles = useStyles();
   const label = capacity === null ? 'Drop-in event' : `${registeredCount} / ${capacity}`;
 
   return (
@@ -12,13 +14,13 @@ export default function CapacityBadge({ capacity, registeredCount = 0 }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((colors) => ({
   badge: {
     alignSelf: 'flex-start',
-    backgroundColor: '#E4ECF5',
+    backgroundColor: colors.badgeBackground,
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
-  label: { color: '#23313D', fontSize: 12, fontWeight: '700' },
-});
+  label: { color: colors.badgeText, fontSize: 12, fontWeight: '700' },
+}));

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Chip, Text } from '@rneui/themed';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -8,7 +8,7 @@ import LoadingOverlay from '../components/LoadingOverlay';
 import { useAppContext } from '../context/AppContext';
 import { getEvent, isRegistered, registerForEvent } from '../db/database';
 import { formatFullEventDate } from '../utils/date';
-import { colors } from '../theme/theme';
+import { createThemedStyles, useAppColors } from '../theme/theme';
 
 export default function EventDetailsScreen({ navigation, route }) {
   const { events, savedEventIds, toggleSaved } = useAppContext();
@@ -19,6 +19,8 @@ export default function EventDetailsScreen({ navigation, route }) {
   // [Modified] QA-02: The saved state comes straight from context instead of a local
   // copy that could go stale, so this heart always matches the hearts on Discover and Saved.
   const saved = event ? savedEventIds.includes(event.id) : false;
+  const colors = useAppColors();
+  const styles = useStyles();
 
   // [Modified] QA-03: Loads the event by its unique id. The old code accepted a list position
   // (eventIndex) and read events[eventIndex], which pointed at the wrong event after a search
@@ -108,7 +110,7 @@ export default function EventDetailsScreen({ navigation, route }) {
           style={styles.navButton}
         >
           <MaterialCommunityIcons
-            color={saved ? '#C6253D' : colors.blue}
+            color={saved ? colors.heart : colors.blue}
             name={saved ? 'heart' : 'heart-outline'}
             size={25}
           />
@@ -189,9 +191,9 @@ export default function EventDetailsScreen({ navigation, route }) {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { backgroundColor: '#FFFFFF', flex: 1 },
-  center: { alignItems: 'center', flex: 1, justifyContent: 'center' },
+const useStyles = createThemedStyles((colors) => ({
+  safeArea: { backgroundColor: colors.surface, flex: 1 },
+  center: { alignItems: 'center', backgroundColor: colors.surface, flex: 1, justifyContent: 'center' },
   navBar: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 4 },
   navButton: { alignItems: 'center', height: 38, justifyContent: 'center', width: 38 },
   content: { paddingBottom: 28, paddingHorizontal: 22 },
@@ -206,14 +208,14 @@ const styles = StyleSheet.create({
   capacityText: { color: colors.muted, fontSize: 13 },
   rule: { backgroundColor: colors.border, height: 1, marginVertical: 24 },
   sectionTitle: { color: colors.ink, fontSize: 18, fontWeight: '800' },
-  description: { color: '#3E4A55', fontSize: 16, lineHeight: 25, marginTop: 9 },
+  description: { color: colors.bodyText, fontSize: 16, lineHeight: 25, marginTop: 9 },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 17 },
   tag: { borderColor: colors.border, borderRadius: 999 },
   tagText: { color: colors.blueLight, fontSize: 12 },
   noteCard: { alignItems: 'center', backgroundColor: colors.cream, borderRadius: 14, flexDirection: 'row', marginTop: 26, padding: 15 },
-  noteIcon: { alignItems: 'center', backgroundColor: '#E5EDF4', borderRadius: 10, height: 42, justifyContent: 'center', width: 42 },
+  noteIcon: { alignItems: 'center', backgroundColor: colors.noteIconBackground, borderRadius: 10, height: 42, justifyContent: 'center', width: 42 },
   noteCopy: { flex: 1, marginHorizontal: 12 },
   noteTitle: { color: colors.ink, fontSize: 15, fontWeight: '800' },
   noteDescription: { color: colors.muted, fontSize: 12, marginTop: 2 },
   footer: { borderTopColor: colors.border, borderTopWidth: 1, paddingHorizontal: 20, paddingTop: 14 },
-});
+}));

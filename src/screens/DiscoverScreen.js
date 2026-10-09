@@ -3,7 +3,6 @@ import {
   FlatList,
   Pressable,
   RefreshControl,
-  StyleSheet,
   Text as NativeText,
   TextInput,
   View,
@@ -15,7 +14,7 @@ import EventCard from '../components/EventCard';
 import EmptyState from '../components/EmptyState';
 import { useAppContext } from '../context/AppContext';
 import { refreshEvents } from '../services/eventService';
-import { colors } from '../theme/theme';
+import { createThemedStyles, useAppColors } from '../theme/theme';
 
 const categories = ['All', 'Academic', 'Arts', 'Career', 'Community', 'Workshop'];
 
@@ -32,6 +31,8 @@ export default function DiscoverScreen({ navigation }) {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState('');
+  const colors = useAppColors();
+  const styles = useStyles();
 
   // [Modified] QA-03: Sorts a copy of the events ([...events]) by start time instead of
   // calling events.sort() directly. sort() reorders an array in place, so the old code
@@ -60,13 +61,13 @@ export default function DiscoverScreen({ navigation }) {
   async function handleRefresh() {
     setRefreshing(true);
     setRefreshError('');
-    setEvents([]);
     try {
       const nextEvents = await refreshEvents();
       setEvents(nextEvents);
-      setRefreshing(false);
     } catch (error) {
       setRefreshError(error.message);
+    } finally {
+      setRefreshing(false);
     }
   }
 
@@ -88,7 +89,7 @@ export default function DiscoverScreen({ navigation }) {
         <TextInput
           onChangeText={setQuery}
           placeholder="Search events"
-          placeholderTextColor="#7B858E"
+          placeholderTextColor={colors.placeholder}
           returnKeyType="search"
           style={styles.searchInput}
           value={query}
@@ -160,7 +161,7 @@ export default function DiscoverScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((colors) => ({
   safeArea: { backgroundColor: colors.cream, flex: 1 },
   header: { paddingHorizontal: 20, paddingTop: 12 },
   eyebrow: { color: colors.blueLight, fontSize: 11, fontWeight: '800', letterSpacing: 1.4 },
@@ -168,7 +169,7 @@ const styles = StyleSheet.create({
   subheading: { color: colors.muted, fontSize: 15, marginTop: 3 },
   searchBox: {
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     borderColor: colors.border,
     borderRadius: 13,
     borderWidth: 1,
@@ -188,7 +189,7 @@ const styles = StyleSheet.create({
   chip: {
     alignItems: 'center',
     backgroundColor: 'transparent',
-    borderColor: '#AAB4BE',
+    borderColor: colors.chipBorder,
     borderRadius: 999,
     borderWidth: 1,
     justifyContent: 'center',
@@ -198,9 +199,9 @@ const styles = StyleSheet.create({
   },
   selectedChip: { backgroundColor: colors.blue, borderColor: colors.blue },
   chipText: { color: colors.blue, fontSize: 13, fontWeight: '700' },
-  selectedChipText: { color: '#FFFFFF' },
+  selectedChipText: { color: colors.onAccent },
   refreshError: { color: colors.danger, marginHorizontal: 20, marginBottom: 8 },
   list: { paddingBottom: 28, paddingHorizontal: 20 },
   emptyList: { flexGrow: 1 },
   separator: { height: 12 },
-});
+}));

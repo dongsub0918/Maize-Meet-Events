@@ -6,7 +6,8 @@ export async function getPreferences() {
   const storedTheme = await AsyncStorage.getItem(DARK_KEY);
 
   return {
-    darkTheme: storedTheme === null ? false : Boolean(storedTheme),
+    // Stored as the string "true" or "false"; Boolean("false") would be true.
+    darkTheme: storedTheme === 'true',
   };
 }
 

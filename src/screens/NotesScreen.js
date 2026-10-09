@@ -1,16 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text } from '@rneui/themed';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getNote, saveNote } from '../db/database';
-import { colors } from '../theme/theme';
+import { createThemedStyles, useAppColors } from '../theme/theme';
 
 export default function NotesScreen({ navigation, route }) {
   const { eventId, eventTitle } = route.params;
   const [note, setNote] = useState('');
   const [loaded, setLoaded] = useState(false);
   const timer = useRef(null);
+  const colors = useAppColors();
+  const styles = useStyles();
 
   useEffect(() => {
     getNote(eventId)
@@ -18,14 +20,27 @@ export default function NotesScreen({ navigation, route }) {
       .finally(() => setLoaded(true));
   }, [eventId]);
 
+  const pendingNote = useRef(null);
+
   useEffect(() => {
     if (!loaded) return;
+    pendingNote.current = note;
     timer.current = setTimeout(() => {
+      pendingNote.current = null;
       saveNote(eventId, note)
         .catch(() => {});
     }, 700);
     return () => clearTimeout(timer.current);
   }, [note]);
+
+  // Save any typing that is still waiting when the user leaves the screen.
+  useEffect(() => {
+    return () => {
+      if (pendingNote.current !== null) {
+        saveNote(eventId, pendingNote.current).catch(() => {});
+      }
+    };
+  }, [eventId]);
 
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
@@ -49,7 +64,7 @@ export default function NotesScreen({ navigation, route }) {
             multiline
             onChangeText={setNote}
             placeholder="What do you want to remember about this event?"
-            placeholderTextColor="#89929B"
+            placeholderTextColor={colors.placeholder}
             style={styles.input}
             textAlignVertical="top"
             value={note}
@@ -60,7 +75,7 @@ export default function NotesScreen({ navigation, route }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((colors) => ({
   safeArea: { backgroundColor: colors.cream, flex: 1 },
   flex: { flex: 1 },
   header: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 7 },
@@ -70,5 +85,5 @@ const styles = StyleSheet.create({
   eyebrow: { color: colors.blueLight, fontSize: 11, fontWeight: '800', letterSpacing: 1.3 },
   eventTitle: { color: colors.blue, fontSize: 25, fontWeight: '900', lineHeight: 30, marginTop: 6 },
   helper: { color: colors.muted, marginTop: 8 },
-  input: { backgroundColor: '#FFFFFF', borderColor: colors.border, borderRadius: 14, borderWidth: 1, color: colors.ink, flex: 1, fontSize: 16, lineHeight: 24, marginTop: 22, maxHeight: 330, minHeight: 180, padding: 16 },
-});
+  input: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 14, borderWidth: 1, color: colors.ink, flex: 1, fontSize: 16, lineHeight: 24, marginTop: 22, maxHeight: 330, minHeight: 180, padding: 16 },
+}));

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { FlatList, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text } from '@rneui/themed';
 import EventCard from '../components/EventCard';
@@ -7,12 +7,13 @@ import EmptyState from '../components/EmptyState';
 import LoadingOverlay from '../components/LoadingOverlay';
 import { getSavedEvents } from '../db/database';
 import { useAppContext } from '../context/AppContext';
-import { colors } from '../theme/theme';
+import { createThemedStyles } from '../theme/theme';
 
 export default function SavedScreen({ navigation }) {
   const { savedEventIds, toggleSaved } = useAppContext();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const styles = useStyles();
 
   // [Modified] QA-02: Reloads the saved list whenever savedEventIds changes. Before,
   // it loaded only once when the tab first opened, so later saves and unsaves never showed up
@@ -79,7 +80,7 @@ export default function SavedScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((colors) => ({
   safeArea: { backgroundColor: colors.cream, flex: 1 },
   header: { paddingHorizontal: 20, paddingTop: 16 },
   heading: { color: colors.blue, fontSize: 30, fontWeight: '900', letterSpacing: -0.5 },
@@ -87,4 +88,4 @@ const styles = StyleSheet.create({
   list: { paddingBottom: 28, paddingHorizontal: 20, paddingTop: 18 },
   emptyList: { flexGrow: 1 },
   separator: { height: 12 },
-});
+}));
