@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { Card, Text } from '@rneui/themed';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { formatEventDate, formatEventTime } from '../utils/date';
-import { colors } from '../theme/theme';
+import { createThemedStyles, useAppColors } from '../theme/theme';
 
 export default function EventCard({ event, initiallySaved, onPress, onToggleSaved }) {
   const [saved, setSaved] = useState(initiallySaved);
+  const colors = useAppColors();
+  const styles = useStyles();
 
   async function handleSavedPress() {
     setSaved((current) => !current);
@@ -21,7 +23,7 @@ export default function EventCard({ event, initiallySaved, onPress, onToggleSave
           <Text style={styles.category}>{event.category.toUpperCase()}</Text>
           <Pressable hitSlop={4} onPress={handleSavedPress} style={styles.heartButton}>
             <MaterialCommunityIcons
-              color={saved ? '#C6253D' : colors.muted}
+              color={saved ? colors.heart : colors.muted}
               name={saved ? 'heart' : 'heart-outline'}
               size={22}
             />
@@ -39,13 +41,13 @@ export default function EventCard({ event, initiallySaved, onPress, onToggleSave
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((colors) => ({
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     elevation: 1,
     height: 174,
     padding: 18,
-    shadowColor: '#102B44',
+    shadowColor: colors.shadow,
     shadowOpacity: 0.08,
     shadowRadius: 12,
   },
@@ -56,4 +58,4 @@ const styles = StyleSheet.create({
   title: { color: colors.ink, fontSize: 20, fontWeight: '800', marginTop: 2 },
   date: { color: colors.blue, fontSize: 14, fontWeight: '700', marginTop: 8 },
   meta: { color: colors.muted, fontSize: 13, marginTop: 3 },
-});
+}));

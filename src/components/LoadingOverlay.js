@@ -1,9 +1,11 @@
 import React from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { Text } from '@rneui/themed';
-import { colors } from '../theme/theme';
+import { createThemedStyles, useAppColors } from '../theme/theme';
 
 export default function LoadingOverlay({ label = 'Loading events...' }) {
+  const colors = useAppColors();
+  const styles = useStyles();
   return (
     <View style={styles.container}>
       <ActivityIndicator color={colors.blue} size="large" />
@@ -12,7 +14,7 @@ export default function LoadingOverlay({ label = 'Loading events...' }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { alignItems: 'center', flex: 1, justifyContent: 'center' },
+const useStyles = createThemedStyles((colors) => ({
+  container: { alignItems: 'center', backgroundColor: colors.cream, flex: 1, justifyContent: 'center' },
   label: { color: colors.muted, marginTop: 12 },
-});
+}));
