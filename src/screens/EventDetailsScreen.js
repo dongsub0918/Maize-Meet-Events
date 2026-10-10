@@ -93,9 +93,7 @@ export default function EventDetailsScreen({ navigation, route }) {
     <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
       <View style={styles.navBar}>
         <Pressable
-          onPress={() =>
-            route.params.source ? navigation.goBack() : navigation.navigate(route.params.source)
-          }
+          onPress={() => navigation.goBack()}
           style={styles.navButton}
         >
           <MaterialCommunityIcons color={colors.blue} name="arrow-left" size={25} />
