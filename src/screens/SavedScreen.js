@@ -18,6 +18,7 @@ export default function SavedScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [dateAscending, setDateAscending] = useState(true);
   const [titleAscending, setTitleAscending] = useState(true);
+  const [primarySort, setPrimarySort] = useState('date');
   const [sortPreferencesLoaded, setSortPreferencesLoaded] = useState(false);
   const styles = useStyles();
 
@@ -35,6 +36,9 @@ export default function SavedScreen({ navigation }) {
         }
         if (typeof preferences.titleAscending === 'boolean') {
           setTitleAscending(preferences.titleAscending);
+        }
+        if (preferences.primarySort === 'date' || preferences.primarySort === 'title') {
+          setPrimarySort(preferences.primarySort);
         }
       } catch {
         // Keep the documented defaults if saved preferences cannot be read.
@@ -54,11 +58,11 @@ export default function SavedScreen({ navigation }) {
 
     AsyncStorage.setItem(
       SAVED_SORT_PREFERENCES_KEY,
-      JSON.stringify({ dateAscending, titleAscending })
+      JSON.stringify({ dateAscending, primarySort, titleAscending })
     ).catch(() => {
       // The controls should continue to work for this session if persistence fails.
     });
-  }, [dateAscending, sortPreferencesLoaded, titleAscending]);
+  }, [dateAscending, primarySort, sortPreferencesLoaded, titleAscending]);
 
   // [Modified] QA-02: Reloads the saved list whenever savedEventIds changes. Before,
   // it loaded only once when the tab first opened, so later saves and unsaves never showed up
@@ -78,7 +82,7 @@ export default function SavedScreen({ navigation }) {
   }, [savedEventIds]);
 
   // Builds a separate saved-events list so changing its order never mutates the events array
-  // shared with Discover. Date is the primary key and title provides a stable tie-breaker.
+  // shared with Discover. The selected criterion is primary and the other breaks ties.
   const displayedEvents = Array.from(
     new Map(
       events
@@ -86,16 +90,33 @@ export default function SavedScreen({ navigation }) {
         .map((event) => [event.id, event])
     ).values()
   ).sort((left, right) => {
-    const dateComparison = new Date(left.startsAt) - new Date(right.startsAt);
-    if (dateComparison !== 0) {
-      return dateAscending ? dateComparison : -dateComparison;
-    }
-
-    const titleComparison = left.title.localeCompare(right.title, undefined, {
+    const rawDateComparison = new Date(left.startsAt) - new Date(right.startsAt);
+    const dateComparison = dateAscending ? rawDateComparison : -rawDateComparison;
+    const rawTitleComparison = left.title.localeCompare(right.title, undefined, {
       sensitivity: 'base',
     });
-    return titleAscending ? titleComparison : -titleComparison;
+    const titleComparison = titleAscending ? rawTitleComparison : -rawTitleComparison;
+
+    return primarySort === 'date'
+      ? dateComparison || titleComparison
+      : titleComparison || dateComparison;
   });
+
+  function handleDateSort() {
+    if (primarySort === 'date') {
+      setDateAscending((current) => !current);
+    } else {
+      setPrimarySort('date');
+    }
+  }
+
+  function handleTitleSort() {
+    if (primarySort === 'title') {
+      setTitleAscending((current) => !current);
+    } else {
+      setPrimarySort('title');
+    }
+  }
 
   if (loading || !sortPreferencesLoaded) {
     return <LoadingOverlay label="Loading saved events..." />;
@@ -110,23 +131,51 @@ export default function SavedScreen({ navigation }) {
         <View style={styles.sortControls}>
           <Pressable
             accessibilityLabel={`Date order: ${dateAscending ? 'soonest first' : 'latest first'}`}
-            accessibilityHint="Toggles the saved events date order"
+            accessibilityHint={
+              primarySort === 'date'
+                ? 'Toggles the saved events date order'
+                : 'Makes date the primary sort order'
+            }
             accessibilityRole="button"
-            onPress={() => setDateAscending((current) => !current)}
-            style={({ pressed }) => [styles.sortButton, pressed && styles.sortButtonPressed]}
+            accessibilityState={{ selected: primarySort === 'date' }}
+            onPress={handleDateSort}
+            style={({ pressed }) => [
+              styles.sortButton,
+              primarySort === 'date' && styles.sortButtonSelected,
+              pressed && styles.sortButtonPressed,
+            ]}
           >
-            <Text style={styles.sortButtonText}>
+            <Text
+              style={[
+                styles.sortButtonText,
+                primarySort === 'date' && styles.sortButtonTextSelected,
+              ]}
+            >
               Date: {dateAscending ? 'Soonest first' : 'Latest first'}
             </Text>
           </Pressable>
           <Pressable
             accessibilityLabel={`Title order: ${titleAscending ? 'A to Z' : 'Z to A'}`}
-            accessibilityHint="Toggles the saved events title order"
+            accessibilityHint={
+              primarySort === 'title'
+                ? 'Toggles the saved events title order'
+                : 'Makes title the primary sort order'
+            }
             accessibilityRole="button"
-            onPress={() => setTitleAscending((current) => !current)}
-            style={({ pressed }) => [styles.sortButton, pressed && styles.sortButtonPressed]}
+            accessibilityState={{ selected: primarySort === 'title' }}
+            onPress={handleTitleSort}
+            style={({ pressed }) => [
+              styles.sortButton,
+              primarySort === 'title' && styles.sortButtonSelected,
+              pressed && styles.sortButtonPressed,
+            ]}
           >
-            <Text style={styles.sortButtonText}>
+            <Text
+              style={[
+                styles.sortButtonText,
+                primarySort === 'title' && styles.sortButtonTextSelected,
+              ]}
+            >
               Title: {titleAscending ? 'A–Z' : 'Z–A'}
             </Text>
           </Pressable>
@@ -175,8 +224,10 @@ const useStyles = createThemedStyles((colors) => ({
     paddingHorizontal: 12,
     paddingVertical: 9,
   },
+  sortButtonSelected: { backgroundColor: colors.blue, borderColor: colors.blue },
   sortButtonPressed: { opacity: 0.65 },
   sortButtonText: { color: colors.blue, fontSize: 12, fontWeight: '700', textAlign: 'center' },
+  sortButtonTextSelected: { color: colors.onAccent },
   list: { paddingBottom: 28, paddingHorizontal: 20, paddingTop: 18 },
   emptyList: { flexGrow: 1 },
   separator: { height: 12 },
